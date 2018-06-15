@@ -3,9 +3,8 @@
 import ffmpy
 import multiprocessing
 from tkinter.filedialog import askopenfilename, asksaveasfile
+from tkinter import Text
 from tkinter import *
-from time import sleep
-import sys
 import os
 
 
@@ -28,6 +27,7 @@ class App():
         self.output_path = None
         self.master = master
         self.done = False
+        self.convert_queue = multiprocessing.Queue()
 
        
         
@@ -47,8 +47,7 @@ class App():
         self.convert_button = Button(master, text="Create Video", command=self.Convert)
         self.convert_button.pack()
 
-        self.converting_textbox = Label(master, textvariable=self.converting_text).pack()
-        
+        self.converting_textbox = Label(master, textvariable=self.converting_text).pack()        
        
         frame.pack()
 
@@ -80,22 +79,51 @@ class App():
 
         os.remove(self.output_path)
 
-        ff = ffmpy.FFmpeg( inputs={self.image_path: ['-loop', '1', '-r', '1'], self.audio_path: None}, 
-                        outputs={self.output_path: ['-c:a', 'copy', '-c:v', 'libx264', '-preset', 'fast', '-threads', '0', '-shortest']})
+        convert_process = multiprocessing.Process(target = Convert, args=(self.convert_queue, self.audio_path, self.image_path, self.output_path))
+        convert_process.start()
 
-        ff.run()
+        self.UpdateOutput()      
+
+    def UpdateOutput(self):
+
+        if self.convert_queue.empty():
+            
+            self.master.after(100, self.UpdateOutput)
+        
+        else:
+
+            self.Done()
+
+            
+
+    def Done(self):
 
         self.converting_text.set("Done. \n Your video should now be available at: \n" + self.output_path)
 
 
-   
+class Convert():
 
+    def __init__(self, queue, audio_path, image_path, output_path):
 
+        self.queue = queue
+        self.audio_path = audio_path
+        self.image_path = image_path
+        self.output_path = output_path
+
+        self.ff = ffmpy.FFmpeg( inputs={self.image_path: ['-loop', '1', '-r', '1'], self.audio_path: None}, 
+                        outputs={self.output_path: ['-c:a', 'copy', '-c:v', 'libx264', '-preset', 'fast', '-threads', '0', '-shortest', '-loglevel', 'quiet']})
+        
+        self.run()
+
+    def run(self):
+
+        self.ff.run()
+        self.queue.put(True)
 
         
-
-
 if __name__ == '__main__':
+
+    multiprocessing.freeze_support()
   
     #Start the main GUI
     root = Tk()
