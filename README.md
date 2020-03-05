@@ -1,4 +1,6 @@
 # AudioToVideo
+<img width=100px src="https://raw.githubusercontent.com/nadehi18/social-templates/master/codecard-python.png">
+
 AudioToVideo is a small program made in Python to be a GUI wrapper for FFMPEG to make a video from a audio file and single image.
 Theoretically any format supported by FFMPEG should be supported but so far the only ones tested are MP3 and WAV for audio and PNG and JPG for images.
 
